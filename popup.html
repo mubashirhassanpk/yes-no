@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub File Uploader</title>
+  <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <img src="icons/icon-32.png" alt="GitHub Uploader" />
+        <h1>GitHub File Uploader</h1>
+      </div>
+      <div class="auth-status">
+        <span id="authStatus" class="status-text">Not authenticated</span>
+        <button id="authButton" class="btn btn-primary">Login with GitHub</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Repository Selection -->
+      <section class="repo-section" id="repoSection" style="display: none;">
+        <h2>Select Repository</h2>
+        <div class="repo-controls">
+          <div class="search-box">
+            <input type="text" id="repoSearch" placeholder="Search repositories..." aria-label="Search repositories">
+            <button id="refreshRepos" class="btn btn-icon" aria-label="Refresh repositories">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M13.65 2.35a8 8 0 1 0 1.41 8.64l-1.42-.71a6.5 6.5 0 1 1-1.17-7.05L11 4.7V1h3.7l-1.05 1.35z"/>
+              </svg>
+            </button>
+          </div>
+          <button id="createRepoBtn" class="btn btn-secondary">Create New Repository</button>
+        </div>
+        
+        <div class="repo-list-wrapper">
+          <select id="repoSelect" size="5" aria-label="Repository list">
+            <option value="">Loading repositories...</option>
+          </select>
+        </div>
+
+        <!-- Branch Selection -->
+        <div class="branch-section" id="branchSection" style="display: none;">
+          <label for="branchSelect">Branch:</label>
+          <select id="branchSelect" aria-label="Branch selection">
+            <option value="">Select a branch</option>
+          </select>
+          <button id="createBranchBtn" class="btn btn-secondary btn-small">New Branch</button>
+        </div>
+      </section>
+
+      <!-- File Upload Area -->
+      <section class="upload-section" id="uploadSection" style="display: none;">
+        <h2>Upload Files</h2>
+        
+        <!-- Drag and Drop Zone -->
+        <div class="drop-zone" id="dropZone" tabindex="0" role="button" aria-label="Drop files here or click to browse">
+          <div class="drop-zone-content">
+            <svg class="upload-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M7 18a4.6 4.4 0 0 1 0-9h1.5a5 5 0 1 1 8.5-3.5 4 4 0 0 1 4 3.5h.5a3.5 3.5 0 0 1 0 7h-2"/>
+              <polyline points="8 15 12 11 16 15"/>
+              <line x1="12" y1="11" x2="12" y2="20"/>
+            </svg>
+            <p class="drop-text">Drag & drop files or folders here</p>
+            <p class="drop-subtext">or</p>
+            <button class="btn btn-primary" id="browseBtn">Browse Files</button>
+            <input type="file" id="fileInput" multiple webkitdirectory hidden aria-hidden="true">
+          </div>
+        </div>
+
+        <!-- File List -->
+        <div class="file-list" id="fileList" style="display: none;">
+          <h3>Selected Files</h3>
+          <div class="file-list-header">
+            <span class="file-count" id="fileCount">0 files selected</span>
+            <button id="clearFilesBtn" class="btn btn-link">Clear All</button>
+          </div>
+          <ul id="fileListItems" class="file-items" aria-label="Selected files list"></ul>
+        </div>
+
+        <!-- Upload Options -->
+        <div class="upload-options" id="uploadOptions" style="display: none;">
+          <div class="form-group">
+            <label for="commitMessage">Commit Message:</label>
+            <textarea id="commitMessage" placeholder="Add files via GitHub Uploader" rows="3" aria-label="Commit message"></textarea>
+          </div>
+          
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="compressFiles" aria-label="Compress files before upload">
+              <span>Compress files before upload</span>
+            </label>
+            <label>
+              <input type="checkbox" id="validateTypes" checked aria-label="Validate file types">
+              <span>Validate file types</span>
+            </label>
+          </div>
+
+          <div class="upload-actions">
+            <button id="uploadBtn" class="btn btn-success btn-large">
+              <span>Upload to GitHub</span>
+            </button>
+            <button id="cancelBtn" class="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Progress Section -->
+      <section class="progress-section" id="progressSection" style="display: none;">
+        <h2>Upload Progress</h2>
+        <div class="progress-container">
+          <div class="progress-info">
+            <span id="progressText">Preparing upload...</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+          </div>
+          <div class="progress-details" id="progressDetails">
+            <span id="currentFile">-</span>
+            <span id="uploadSpeed">-</span>
+          </div>
+        </div>
+        
+        <div class="upload-log" id="uploadLog">
+          <h3>Upload Log</h3>
+          <ul id="logList" class="log-list" aria-label="Upload log"></ul>
+        </div>
+
+        <div class="progress-actions">
+          <button id="pauseBtn" class="btn btn-secondary">Pause</button>
+          <button id="resumeBtn" class="btn btn-secondary" style="display: none;">Resume</button>
+          <button id="stopBtn" class="btn btn-danger">Stop</button>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section class="results-section" id="resultsSection" style="display: none;">
+        <h2>Upload Complete</h2>
+        <div class="results-summary">
+          <div class="stat stat-success">
+            <span class="stat-number" id="successCount">0</span>
+            <span class="stat-label">Successful</span>
+          </div>
+          <div class="stat stat-error">
+            <span class="stat-number" id="errorCount">0</span>
+            <span class="stat-label">Failed</span>
+          </div>
+        </div>
+        
+        <div class="results-details" id="resultsDetails"></div>
+        
+        <div class="results-actions">
+          <button id="viewRepoBtn" class="btn btn-primary">View Repository</button>
+          <button id="uploadMoreBtn" class="btn btn-secondary">Upload More Files</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Create Repository Modal -->
+    <div class="modal" id="createRepoModal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Create New Repository</h2>
+          <button class="modal-close" id="closeModalBtn" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="newRepoName">Repository Name:</label>
+            <input type="text" id="newRepoName" placeholder="my-awesome-project" required aria-label="Repository name">
+          </div>
+          <div class="form-group">
+            <label for="newRepoDesc">Description (optional):</label>
+            <textarea id="newRepoDesc" placeholder="A brief description of your repository" rows="3" aria-label="Repository description"></textarea>
+          </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="newRepoPrivate" aria-label="Make repository private">
+              <span>Private repository</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="createRepoConfirmBtn" class="btn btn-primary">Create Repository</button>
+          <button id="createRepoCancelBtn" class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="notifications" class="notifications" aria-live="polite" aria-atomic="true"></div>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/file-handler.js"></script>
+  <script src="js/popup.js"></script>
+</body>
+</html>
